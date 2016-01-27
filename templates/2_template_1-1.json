@@ -37,8 +37,8 @@
 		"Type" : "AWS::EC2::Instance",
 		"Properties" : {"AvailabilityZone" : "eu-central-1a",
 						"ImageId" : "ami-2a868b37",
-						"InstanceType" : "t2.micro"
-						"KeyName" : "epam-key-test"
+						"InstanceType" : "t2.micro",
+						"KeyName" : "epam-key-test",
 						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1"} , {"Ref": "MySecurityGroup2"}],
 						"Tags" : [ { "NameTag" : "SecondInstance", "NumberTag" : "2" } ]
 		}
@@ -48,8 +48,8 @@
 	"Type" : "AWS::EC2::Instance",
 	"Properties" : {"AvailabilityZone" : "eu-central-1b",
 					"ImageId" : "ami-2a868b37",
-					"InstanceType" : "t2.micro"
-					"KeyName" : "epam-key-test"
+					"InstanceType" : "t2.micro",
+					"KeyName" : "epam-key-test",
 					"SecurityGroups" : [ {"Ref" : "MySecurityGroup1"} , {"Ref" : "MySecurityGroup2" } ],
 					"Tags" : [ { "NameTag" : "ThirdInstance", "NumberTag" : "3" } ]
 		}
