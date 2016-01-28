@@ -29,7 +29,7 @@
 							}
 						 }
 						],
-						"Tags" : [ { "NameTag" : "FirstInstance", "NumberTag" : "1" } ]
+						"Tags" : [ { "Key" : "NameTag", "Value" : "FirstInstance" } , { "Key" : "NumberTag", "Value" : "1" } ]
 					}
     },
 	
@@ -40,7 +40,7 @@
 						"InstanceType" : "t2.micro",
 						"KeyName" : "epam-key-test",
 						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1"} , {"Ref": "MySecurityGroup2"}],
-						"Tags" : [ { "NameTag" : "SecondInstance", "NumberTag" : "2" } ]
+						"Tags" : [ { "Key" : "NameTag", "Value" : "SecondInstance" } , { "Key" : "NumberTag", "Value" : "2" } ]
 		}
 	},
 	
@@ -51,7 +51,7 @@
 					"InstanceType" : "t2.micro",
 					"KeyName" : "epam-key-test",
 					"SecurityGroups" : [ {"Ref" : "MySecurityGroup1"} , {"Ref" : "MySecurityGroup2" } ],
-					"Tags" : [ { "NameTag" : "ThirdInstance", "NumberTag" : "3" } ]
+					"Tags" : [ { "Key" : "NameTag", "Value" : "ThirdInstance" } , { "Key" : "NumberTag", "Value" : "3" } ]
 		}
 	},
 	
@@ -60,7 +60,12 @@
 	"Properties" : {"AvailabilityZones" : [ "eu-central-1a", "eu-central-1b" ],
 					"Instances" : [ { "Ref" : "MyEC2Instance" } , { "Ref" : "SecondEC2Instance" }, { "Ref" : "ThirdEC2Instance" } ],
 					"LoadBalancerName" : "TestLoadBalancer",
-					"Listeners" : [ { "LoadBalancerPort" : "80" } , { "InstancePort" : "80" } , { "Protocol" : "HTTP" } ]
+					"Listeners" : [ { 
+						"InstancePort" : "80",
+						"LoadBalancerPort" : "80", 
+						"Protocol" : "HTTP"
+					} 
+		 ]
 		}
 	},
 	
