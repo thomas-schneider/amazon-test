@@ -10,6 +10,7 @@
 				"Version" : "2012-10-17",
 				"Statement" : [ {
 					"Effect" : "Allow",
+					"Principal" : { "Service" : [ "ec2.amazonaws.com" ] }
 					"Action" : [ "s3:*" ]
 				 }					
 				]
@@ -35,11 +36,10 @@
 						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"} ],
 						"BlockDeviceMappings" : [
 						{
-							"DeviceName" : "/dev/sdm",
+							"DeviceName" : "/dev/sda1",
 							"Ebs" : {
-							"VolumeType" : "io1",
-							"Iops" : "200",
-							"DeleteOnTermination" : "false",
+							"VolumeType" : "gp2",
+							"DeleteOnTermination" : "true",
 							"VolumeSize" : "20"
 							}
 						 }
