@@ -1,0 +1,113 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "A sample template",
+  "Resources" : {
+	"myBucket" : {
+		"Type" : "AWS::S3::Bucket"
+    },
+	"MyEIP" : {
+		"Type" : "AWS::EC2::EIP",
+		"Properties" : {
+		"InstanceId" : { "Ref" : "MyEC2Instance" }
+	 }
+	},
+    "MyEC2Instance" : {
+		"Type" : "AWS::EC2::Instance",
+		
+		"Metadata" : {
+			"AWS::CloudFormation::Init" : {
+				"config" : {
+					"packages" : {
+						"yum" : {
+							"httpd" : []
+						}
+					},
+					"commands" : {
+						"echo_hostname" : { "command" : "echo \"$HOSTNAME\" > /var/www/html/index.html" , "ignoreErrors" : "true" }
+					},
+					"services" : {
+						"sysvinit" : {
+							"httpd" : { "enabled" : "true" , "ensureRunning" : "true" }
+						}
+					}
+				}
+			}		
+		},
+		
+		"Properties" : {"AvailabilityZone" : "eu-central-1a", 
+						"ImageId" : "ami-2a868b37", 
+						"InstanceType" : "t2.micro", 
+						"KeyName" : "epam-key-test", 
+						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"} ],
+						"BlockDeviceMappings" : [
+						{
+							"DeviceName" : "/dev/sdm",
+							"Ebs" : {
+							"VolumeType" : "io1",
+							"Iops" : "200",
+							"DeleteOnTermination" : "false",
+							"VolumeSize" : "20"
+							}
+						 }
+						],
+						"Tags" : [ { "Key" : "NameTag", "Value" : "FirstInstance" } , { "Key" : "NumberTag", "Value" : "1" } ],
+						
+						"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum update -y aws-cfn-bootstrap\n",
+											"# Install the files and packages from the metadata\n",
+											"/opt/aws/bin/cfn-init -v ",
+											"         --stack ", { "Ref" : "AWS::StackName" },
+											"         --resource MyEC2Instance", "\n"
+									]]}}
+	 }
+    },
+	
+	"SecondEC2Instance" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {"AvailabilityZone" : "eu-central-1a",
+						"ImageId" : "ami-2a868b37",
+						"InstanceType" : "t2.micro",
+						"KeyName" : "epam-key-test",
+						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1"} , {"Ref": "MySecurityGroup2"}],
+						"Tags" : [ { "Key" : "NameTag", "Value" : "SecondInstance" } , { "Key" : "NumberTag", "Value" : "2" } ]
+		}
+	},
+	
+	"ThirdEC2Instance" : {
+	"Type" : "AWS::EC2::Instance",
+	"Properties" : {"AvailabilityZone" : "eu-central-1b",
+					"ImageId" : "ami-2a868b37",
+					"InstanceType" : "t2.micro",
+					"KeyName" : "epam-key-test",
+					"SecurityGroups" : [ {"Ref" : "MySecurityGroup1"} , {"Ref" : "MySecurityGroup2" } ],
+					"Tags" : [ { "Key" : "NameTag", "Value" : "ThirdInstance" } , { "Key" : "NumberTag", "Value" : "3" } ]
+		}
+	},
+	
+	"MyLoadBalancer" : {
+	"Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+	"Properties" : {"AvailabilityZones" : [ "eu-central-1a", "eu-central-1b" ],
+					"Instances" : [ { "Ref" : "MyEC2Instance" } , { "Ref" : "SecondEC2Instance" }, { "Ref" : "ThirdEC2Instance" } ],
+					"LoadBalancerName" : "TestLoadBalancer",
+					"Listeners" : [ { 
+						"InstancePort" : "80",
+						"LoadBalancerPort" : "80", 
+						"Protocol" : "HTTP"
+					} 
+		 ]
+		}
+	},
+	
+	"MySecurityGroup1" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : { "GroupDescription" : "Enable SSH", "SecurityGroupIngress" : [ {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"} ] }
+	},
+	"MySecurityGroup2" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : { "GroupDescription" : "Enable http", "SecurityGroupIngress" : [{ "IpProtocol":"tcp","FromPort":"80","ToPort":"80","CidrIp":"0.0.0.0/0" }]}
+	}
+  }
+}
