@@ -2,6 +2,21 @@
   "AWSTemplateFormatVersion" : "2010-09-09",
   "Description" : "A sample template",
   "Resources" : {
+  
+	"myRole" : {
+		"Type" : "AWS::IAM::Role",
+		"Properties" : {
+			"AssumeRolePolicyDocument" : {
+				"Version" : "2012-10-17",
+				"Statement" : [ {
+					"Effect" : "Allow",
+					"Action" : [ "s3:*" ]
+				 }					
+				]
+			}
+		}
+	},
+	
 	"myBucket" : {
 		"Type" : "AWS::S3::Bucket"
     },
@@ -13,27 +28,6 @@
 	},
     "MyEC2Instance" : {
 		"Type" : "AWS::EC2::Instance",
-		
-		"Metadata" : {
-			"AWS::CloudFormation::Init" : {
-				"config" : {
-					"packages" : {
-						"yum" : {
-							"httpd" : []
-						}
-					},
-					"commands" : {
-						"echo_hostname" : { "command" : "echo \"$HOSTNAME\" > /var/www/html/index.html" , "ignoreErrors" : "true" }
-					},
-					"services" : {
-						"sysvinit" : {
-							"httpd" : { "enabled" : "true" , "ensureRunning" : "true" }
-						}
-					}
-				}
-			}		
-		},
-		
 		"Properties" : {"AvailabilityZone" : "eu-central-1a", 
 						"ImageId" : "ami-2a868b37", 
 						"InstanceType" : "t2.micro", 
@@ -56,11 +50,7 @@
 							"Fn::Base64" : {
 								"Fn::Join" : [ "", [
 											"#!/bin/bash -xe\n",
-											"yum update -y aws-cfn-bootstrap\n",
-											"# Install the files and packages from the metadata\n",
-											"/opt/aws/bin/cfn-init -v ",
-											"         --stack ", { "Ref" : "AWS::StackName" },
-											"         --resource MyEC2Instance", "\n"
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
 									]]}}
 	 }
     },
@@ -72,7 +62,14 @@
 						"InstanceType" : "t2.micro",
 						"KeyName" : "epam-key-test",
 						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1"} , {"Ref": "MySecurityGroup2"}],
-						"Tags" : [ { "Key" : "NameTag", "Value" : "SecondInstance" } , { "Key" : "NumberTag", "Value" : "2" } ]
+						"Tags" : [ { "Key" : "NameTag", "Value" : "SecondInstance" } , { "Key" : "NumberTag", "Value" : "2" } ],
+						
+						"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
 		}
 	},
 	
@@ -83,7 +80,14 @@
 					"InstanceType" : "t2.micro",
 					"KeyName" : "epam-key-test",
 					"SecurityGroups" : [ {"Ref" : "MySecurityGroup1"} , {"Ref" : "MySecurityGroup2" } ],
-					"Tags" : [ { "Key" : "NameTag", "Value" : "ThirdInstance" } , { "Key" : "NumberTag", "Value" : "3" } ]
+					"Tags" : [ { "Key" : "NameTag", "Value" : "ThirdInstance" } , { "Key" : "NumberTag", "Value" : "3" } ],
+					
+					"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
 		}
 	},
 	
