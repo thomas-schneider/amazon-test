@@ -1,0 +1,249 @@
+{
+"AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Create a template which contains VPC",
+  "Parameters" : { 
+	"KeyName" : {
+		"Type" : "AWS::EC2::KeyPair::KeyName"
+	}
+  },
+  
+  "Resources" : {
+	"EC2InstanceNAT" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-0b322e67", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PublicSubnet1" }
+		}
+	},
+	
+	"MyEIP" : {
+		"Type" : "AWS::EC2::EIP",
+		"Properties" : {
+		"InstanceId" : { "Ref" : "EC2InstanceNAT" }
+	 }
+	},
+	
+	"VPCID" : {
+		"Type" : "AWS::EC2::VPC",
+		"Properties" : {
+			"CidrBlock" : "172.16.0.0/23",
+			"EnableDnsSupport" : "true",
+			"EnableDnsHostnames" : "true",
+			"Tags" : [ { "Key" : "Name" , "Value" : "Hateful-VPC"} ]
+		}
+	},
+	
+	"PublicSubnet1" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.1.0/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PuS-1" } ]
+		}
+	},
+	
+	"EC2PublicSubnet1" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PublicSubnet1" }
+		}
+	},
+	
+	"PublicSubnet2" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.1.16/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PuS-2" } ]
+		}
+	},
+
+	"EC2PublicSubnet2" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PublicSubnet2" }
+		}
+	},
+	
+	"PublicSubnet3" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.1.32/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PuS-3" } ]
+		}
+	},
+	
+	
+	"EC2PublicSubnet3" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PublicSubnet3" }
+		}
+	},
+	
+	"PrivateSubnet1" : {
+		"Type" : "AWS::EC2::Subnet",
+		"DependsOn" : "EC2InstanceNAT",
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.0.0/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PrS-1" } ]
+		}
+	},
+	
+	"EC2PrivateSubnet1" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PrivateSubnet1" }
+		}
+	},
+	
+	"PrivateSubnet2" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"DependsOn" : "EC2InstanceNAT",
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.0.16/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PrS-2" } ]
+		}
+	},
+
+	"EC2PrivateSubnet2" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PrivateSubnet2" }
+			}
+	},
+	
+	"PrivateSubnet3" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"DependsOn" : "EC2InstanceNAT",
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.0.32/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PrS-3" } ]
+		}
+	},
+	
+	"EC2PrivateSubnet3" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PrivateSubnet3" }
+		}
+	},
+	
+	
+	"InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [ {"Key" : "IG", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+	
+	"AttachGateway" : {
+       "Type" : "AWS::EC2::VPCGatewayAttachment",
+       "Properties" : {
+         "VpcId" : { "Ref" : "VPCID" },
+         "InternetGatewayId" : { "Ref" : "InternetGateway" }
+       }
+    },
+	
+	"PublicRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPCID"},
+        "Tags" : [ {"Key" : "Application", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+
+    "PublicRoute" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PublicRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+	
+	"PrivateRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPCID"},
+        "Tags" : [ {"Key" : "Application", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+	
+	"PrivateRoute" : {
+      "Type" : "AWS::EC2::Route",
+	  "DependsOn" : "MyEIP",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0" ,
+        "InstanceId" : { "Ref" : "EC2InstanceNAT" }
+      }
+    },
+	
+	"PrivateSubnetRouteTableAssociation1" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet1" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+	
+	"PrivateSubnetRouteTableAssociation2" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet2" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+	
+	"PrivateSubnetRouteTableAssociation3" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet3" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+	
+	
+	"PublicSubnetRouteTableAssociation1" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet1" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+	
+	"PublicSubnetRouteTableAssociation2" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet2" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+	
+	"PublicSubnetRouteTableAssociation3" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet3" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    }
+  }
+}
