@@ -1,0 +1,393 @@
+{
+"AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Create a template which contains VPC",
+  "Parameters" : { 
+	"KeyName" : {
+		"Type" : "AWS::EC2::KeyPair::KeyName"
+	}
+  },
+  
+  "Resources" : {
+
+    "WebServerGroup" : {
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "VPCZoneIdentifier" : [{"Ref" :"PublicSubnet1"} , {"Ref" : "PublicSubnet3"}],
+        "LaunchConfigurationName" : { "Ref" : "LaunchConfig" },
+        "MinSize" : "1",
+        "MaxSize" : "2",
+        "DesiredCapacity" : "2",
+        "LoadBalancerNames" : [ { "Ref" : "ElasticLoadBalancer" } ]
+      }
+    },
+
+    "LaunchConfig" : {
+    	"Type" : "AWS::AutoScaling::LaunchConfiguration",
+    		"Properties" :{
+    			"KeyName" : {"Ref" : "KeyName"},
+    			"ImageId" : "ami-2a868b37",
+    			"InstanceType" : "t2.micro",
+    			"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
+	 }
+    },
+
+    "ElasticLoadBalancer" : {
+    	"Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+    	"Properties" : {
+    		"LoadBalancerName" : "WebServersLoadBalancer",
+    		"Subnets" : [{"Ref" :"PublicSubnet1"} , {"Ref" : "PublicSubnet3"}],
+    		"Listeners" : [
+    			{
+    				"LoadBalancerPort" :"80",
+    				"InstancePort" : "80",
+    				"Protocol" : "HTTP"	
+    			}
+    		],
+    		"SecurityGroups" : [ { "Ref" : "MySecurityGroup1"} , {"Ref": "MySecurityGroup2"}]	
+    	}
+    },
+
+
+	"EC2InstanceNAT" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-0b322e67", 
+			"InstanceType" : "t2.micro",
+			"KeyName" : { "Ref" : "KeyName" },
+			"NetworkInterfaces" : [{
+				"GroupSet"                 : [{ "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"}],
+				"AssociatePublicIpAddress" : "true",
+				"DeviceIndex"              : "0",
+				"DeleteOnTermination"      : "true",
+				"SubnetId"                 : { "Ref" : "PublicSubnet1" }
+								}]
+		}
+	},
+	
+	"MySecurityGroup1" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : { "GroupDescription" : "Enable SSH", "VpcId" : { "Ref" : "VPCID" },
+						 "SecurityGroupIngress" : [ {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"} ] }
+	},
+	"MySecurityGroup2" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : { "GroupDescription" : "Enable http", 
+						 "VpcId" : { "Ref" : "VPCID" },
+						 "SecurityGroupIngress" : [{ "IpProtocol":"tcp","FromPort":"80","ToPort":"80","CidrIp":"0.0.0.0/0" }]}
+	},
+	
+	
+	"VPCID" : {
+		"Type" : "AWS::EC2::VPC",
+		"Properties" : {
+			"CidrBlock" : "172.16.0.0/23",
+			"EnableDnsSupport" : "true",
+			"EnableDnsHostnames" : "true",
+			"Tags" : [ { "Key" : "Name" , "Value" : "Hateful-VPC"} ]
+		}
+	},
+	
+	"PublicSubnet1" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"Properties" : {
+			"AvailabilityZone" : {"Fn::Select" : ["0" , { "Fn::GetAZs" : "" }]},
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.1.0/28",
+			"MapPublicIpOnLaunch" : "true",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PublicSubnet1" } ]
+		}
+	},
+	
+	"WebServerInstanceOne" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+						"ImageId" : "ami-2a868b37", 
+						"InstanceType" : "t2.micro", 
+						"KeyName" : { "Ref" : "KeyName" },
+						"NetworkInterfaces" : [{
+							"GroupSet"                 : [{ "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"}],
+							"AssociatePublicIpAddress" : "true",
+							"DeviceIndex"              : "0",
+							"DeleteOnTermination"      : "true",
+							"SubnetId"                 : { "Ref" : "PublicSubnet1" }
+						}],
+						"BlockDeviceMappings" : [
+						{
+							"DeviceName" : "/dev/sda1",
+							"Ebs" : {
+							"VolumeType" : "gp2",
+							"DeleteOnTermination" : "true",
+							"VolumeSize" : "20"
+							}
+						 }
+						],
+						"Tags" : [ { "Key" : "InstanceName", "Value" : "WebServerInstanceOne" } , { "Key" : "InstanceNumber", "Value" : "1" } ],
+						
+						"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
+	 }
+    },
+
+
+	
+	"PublicSubnet2" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"Properties" : {
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.1.16/28",
+			"MapPublicIpOnLaunch" : "true",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PublicSubnet2" } ]
+		}
+	},
+
+	"WebServerInstanceTwo" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : { 
+						"ImageId" : "ami-2a868b37", 
+						"InstanceType" : "t2.micro", 
+						"KeyName" : { "Ref" : "KeyName" },
+						"NetworkInterfaces" : [{
+							"GroupSet"                 : [{ "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"}],
+							"AssociatePublicIpAddress" : "true",
+							"DeviceIndex"              : "0",
+							"DeleteOnTermination"      : "true",
+							"SubnetId"                 : { "Ref" : "PublicSubnet2" }
+						}],
+						"BlockDeviceMappings" : [
+						{
+							"DeviceName" : "/dev/sda1",
+							"Ebs" : {
+							"VolumeType" : "gp2",
+							"DeleteOnTermination" : "true",
+							"VolumeSize" : "20"
+							}
+						 }
+						],
+						"Tags" : [ { "Key" : "InstanceName", "Value" : "WebServerInstanceTwo" } , { "Key" : "InstanceNumber", "Value" : "2" } ],
+						
+						"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
+	 }
+    },
+	
+	"PublicSubnet3" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"Properties" : {
+			"AvailabilityZone" : {"Fn::Select" : ["1" , { "Fn::GetAZs" : "" }]},
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.1.32/28",
+			"MapPublicIpOnLaunch" : "true",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PublicSubnet3" } ]
+		}
+	},
+	
+	
+	"WebServerInstanceThree" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+						"ImageId" : "ami-2a868b37", 
+						"InstanceType" : "t2.micro", 
+						"KeyName" : { "Ref" : "KeyName" },
+						"NetworkInterfaces" : [{
+							"GroupSet"                 : [{ "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"}],
+							"AssociatePublicIpAddress" : "true",
+							"DeviceIndex"              : "0",
+							"DeleteOnTermination"      : "true",
+							"SubnetId"                 : { "Ref" : "PublicSubnet3" }
+						}],
+						"BlockDeviceMappings" : [
+						{
+							"DeviceName" : "/dev/sda1",
+							"Ebs" : {
+							"VolumeType" : "gp2",
+							"DeleteOnTermination" : "true",
+							"VolumeSize" : "20"
+							}
+						 }
+						],
+						"Tags" : [ { "Key" : "InstanceName", "Value" : "WebServerInstanceThree" } , { "Key" : "InstanceNumber", "Value" : "3" } ],
+						
+						"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
+	 }
+    },
+
+
+	
+	"PrivateSubnet1" : {
+		"Type" : "AWS::EC2::Subnet",
+		"DependsOn" : "EC2InstanceNAT",
+		"Properties" : {
+			"AvailabilityZone" : "eu-central-1a",
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.0.0/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PrivateSubnet1" } ]
+		}
+	},
+	
+	"EC2PrivateSubnet1" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PrivateSubnet1" }
+		}
+	},
+	
+	"PrivateSubnet2" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"DependsOn" : "EC2InstanceNAT",
+		"Properties" : {
+			"AvailabilityZone" : "eu-central-1a",
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.0.16/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PrivateSubnet2" } ]
+		}
+	},
+
+	"EC2PrivateSubnet2" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PrivateSubnet2" }
+			}
+	},
+	
+	"PrivateSubnet3" : {
+		"Type" : "AWS::EC2::Subnet", 
+		"DependsOn" : "EC2InstanceNAT",
+		"Properties" : {
+			"AvailabilityZone" : "eu-central-1a",
+			"VpcId" : { "Ref" : "VPCID" },
+			"CidrBlock" : "172.16.0.32/28",
+			"Tags" : [ { "Key" : "NetworkID" , "Value" : "PrivateSubnet3" } ]
+		}
+	},
+	
+	"EC2PrivateSubnet3" : {
+		"Type" : "AWS::EC2::Instance",
+		"Properties" : {
+			"ImageId" : "ami-2a868b37", 
+			"InstanceType" : "t2.micro",
+			"SubnetId" : { "Ref" : "PrivateSubnet3" }
+		}
+	},
+	
+	
+	"InternetGateway" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [ {"Key" : "IG", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+	
+	"AttachGateway" : {
+       "Type" : "AWS::EC2::VPCGatewayAttachment",
+       "Properties" : {
+         "VpcId" : { "Ref" : "VPCID" },
+         "InternetGatewayId" : { "Ref" : "InternetGateway" }
+       }
+    },
+	
+	"PublicRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPCID"},
+        "Tags" : [ {"Key" : "Application", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+
+    "PublicRoute" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PublicRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "InternetGateway" }
+      }
+    },
+	
+	"PrivateRouteTable" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : {"Ref" : "VPCID"},
+        "Tags" : [ {"Key" : "Application", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+	
+	"PrivateRoute" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+        "DestinationCidrBlock" : "0.0.0.0/0" ,
+        "InstanceId" : { "Ref" : "EC2InstanceNAT" }
+      }
+    },
+	
+	"PrivateSubnetRouteTableAssociation1" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet1" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+	
+	"PrivateSubnetRouteTableAssociation2" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet2" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+	
+	"PrivateSubnetRouteTableAssociation3" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PrivateSubnet3" },
+        "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+      }
+    },
+	
+	
+	"PublicSubnetRouteTableAssociation1" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet1" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+	
+	"PublicSubnetRouteTableAssociation2" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet2" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    },
+	
+	"PublicSubnetRouteTableAssociation3" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "SubnetId" : { "Ref" : "PublicSubnet3" },
+        "RouteTableId" : { "Ref" : "PublicRouteTable" }
+      }
+    }
+  }
+}
