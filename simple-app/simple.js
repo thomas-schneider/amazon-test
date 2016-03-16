@@ -3,7 +3,7 @@ var http = require('http');
 var request = require("request");
 
 request({
-  uri: "http://10.67.79.47:8080/sample",
+  uri: "http://localhost/sample",
   method: "GET",
   timeout: 10000,
   followRedirect: true,
