@@ -6,7 +6,7 @@ var server = http.createServer(function (req, res) {
     res.writeHead(200, {"Content-Type": "text/plain"});
 
     request({
-        uri: 'http://10.67.79.71:8080/sample',
+        uri: 'http://10.67.79.73:8080/sample',
         method: 'GET',
         maxRedirects:3
     }, function(error, response, body) {
