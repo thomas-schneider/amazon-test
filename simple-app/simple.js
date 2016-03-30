@@ -12,7 +12,7 @@ var server = http.createServer(function (req, res) {
     }, function(error, response, body) {
         if (!error) {
         	res.write(body)
-            res.write(response.statusCode);
+            res.write(response.statusCode.toString());
         } else {
             //response.end(error);
             res.write(error);
