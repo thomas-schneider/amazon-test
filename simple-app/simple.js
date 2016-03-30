@@ -11,10 +11,9 @@ var server = http.createServer(function (req, res) {
         maxRedirects:3
     }, function(error, response, body) {
         if (!error) {
-        	res.write(body)
+        	console.log(body)
             res.write(response.statusCode.toString());
         } else {
-            //response.end(error);
             res.write(error);
         }
     });     
