@@ -17,10 +17,11 @@ snapshot_id = time("%Y-%m-%d_%H:%M:%S")+'_host_'+activeClientIP
 def add_entry_to_log_file(message, **kwargs):
 
         # add entry to log file
+        current_time = time("%Y-%m-%d_%H:%M:%S")
         with open('cloudify-snapshots.log', 'a+') as log_file:
+                log_file.write('{}  '.format(current_time))
                 log_file.write(message)
         log_file.close()
-
 
 
 def check_snapshot(snapshot_id, **kwargs): # Check if the snapshot was created without errors
