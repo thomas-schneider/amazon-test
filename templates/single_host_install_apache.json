@@ -1,0 +1,45 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "A sample template",
+  "Resources" : {
+    "MyEC2Instance" : {
+		"Type" : "AWS::EC2::Instance",		
+		"Properties" : {"AvailabilityZone" : "eu-central-1a", 
+						"ImageId" : "ami-2a868b37", 
+						"InstanceType" : "t2.micro", 
+						"KeyName" : "epam-key-test", 
+						"SecurityGroups" : [ { "Ref" : "MySecurityGroup1" }, {"Ref" : "MySecurityGroup2"} ],
+						"BlockDeviceMappings" : [
+						{
+							"DeviceName" : "/dev/sdm",
+							"Ebs" : {
+							"VolumeType" : "io1",
+							"Iops" : "200",
+							"DeleteOnTermination" : "false",
+							"VolumeSize" : "20"
+							}
+						 }
+						],
+						"Tags" : [ { "Key" : "NameTag", "Value" : "FirstInstance" } , { "Key" : "NumberTag", "Value" : "1" } ],
+						
+						"UserData" : {
+							"Fn::Base64" : {
+								"Fn::Join" : [ "", [
+											"#!/bin/bash -xe\n",
+											"yum install httpd -y && echo \"$HOSTNAME\" >/var/www/html/index.html && service httpd start"
+									]]}}
+	 }
+    },
+	
+	
+	
+	"MySecurityGroup1" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : { "GroupDescription" : "Enable SSH", "SecurityGroupIngress" : [ {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"} ] }
+	},
+	"MySecurityGroup2" : {
+		"Type" : "AWS::EC2::SecurityGroup",
+		"Properties" : { "GroupDescription" : "Enable http", "SecurityGroupIngress" : [{ "IpProtocol":"tcp","FromPort":"80","ToPort":"80","CidrIp":"0.0.0.0/0" }]}
+	}
+  }
+}
